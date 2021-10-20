@@ -33,13 +33,13 @@ class Transaction extends HiveObject{
   String mechanicName = "";
 
   @HiveField(8)
-  int totalTransaction = 0;
+  int transactionAmount = 0;
 
   @HiveField(9)
-  List<TransactionDetail> transactionDetails = [];
+  List transactionDetails = [];
 
   @HiveField(10)
-  List<TransactionMechanic> transactionMechanics = [];
+  List transactionMechanics = [];
 
   @HiveField(11)
   DateTime? createdAt;
@@ -59,13 +59,24 @@ class Transaction extends HiveObject{
     this.vehicleOwnerPhoneNumber = "",
     DateTime? transactionDate,
     this.mechanicName = "",
-    this.totalTransaction = 0,
+    this.transactionAmount = 0,
   }) : this.transactionDate = transactionDate ?? DateTime.now();
+
+  @override
+  String toString(){
+    return "{ ${this.vehiclePlateNumber} ${this.vehicleOwnerName} ${this.vehicleOwnerPhoneNumber} ${this.transactionDate} ${this.transactionAmount} }";
+  }
 }
 
-class TransactionDetail {
+@HiveType(typeId: 4)
+class TransactionDetail extends HiveObject {
+  @HiveField(0)
   Product product = Product();
+
+  @HiveField(1)
   int qty = 0;
+
+  @HiveField(2)
   int subtotal = 0;
 
   TransactionDetail({
@@ -81,6 +92,6 @@ class TransactionDetail {
 
 }
 
-class TransactionMechanic {
-  Employee employee = Employee();
-}
+// class TransactionMechanic {
+//   Employee employee = Employee();
+// }

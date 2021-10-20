@@ -182,7 +182,7 @@ class TransactionDetailScreen extends StatefulWidget{
 class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
 
   final formKey = GlobalKey<FormBuilderState>();
-  Transaction savedTransaction = Transaction(totalTransaction: 0);
+  Transaction savedTransaction = Transaction();
   bool isLoading = false;
   bool isSaved = false;
 
@@ -191,7 +191,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
   @override
   void initState(){
     super.initState();
+    savedTransaction = widget.transactionData;
     employeeBox = Hive.box<Employee>('employees');
+
+    print(widget.transactionData.transactionAmount);
   }
 
   @override
@@ -202,6 +205,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
 
 
   Widget build(BuildContext context){
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -263,10 +267,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
                       FormBuilderDropdown(
                         name: 'mechanicName',
                         hint: Text('Pilih Mekanik'),
+                        initialValue: widget.transactionData.transactionMechanics.isEmpty ? null : widget.transactionData.transactionMechanics[0].name,
                         items: employeeBox.values.map((Employee e) { 
                             return DropdownMenuItem(
                               value: e.name, 
-                              child: Text(e.name!)
+                              child: Text(e.name!),
+
                             );
                           }
                         ).toList(),
@@ -281,7 +287,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text("Total : ${savedTransaction.totalTransaction.toString()}", style: TextStyle(fontSize: 20))
+                              child: Text("Total : ${savedTransaction.transactionAmount.toString()}", style: TextStyle(fontSize: 20))
                             ),
                             Align(
                               alignment: Alignment.centerRight,
@@ -294,21 +300,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
                                   ),
                                 ),
                                 onPressed: () async {
-                                  final TransactionDetail selectedProduct = await Navigator.of(context).push(
+                                  final TransactionDetail? selectedProduct = await Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (context) => ProductsPage(isOpenLookup: true)
                                     )
                                   );
 
-                                  setState(() {
-                                    savedTransaction.transactionDetails.add(selectedProduct);
-                                    print("tambah ${savedTransaction.transactionDetails[0].product.name}");                                    
-                                  });
+                                  if(selectedProduct != null)
+                                    setState(() {
+                                      savedTransaction.transactionDetails.add(selectedProduct);
+                                      savedTransaction.transactionAmount = savedTransaction.transactionAmount + selectedProduct.subtotal;
+                                      print("tambah ${savedTransaction.transactionDetails[0].product.name}");
+                                    });
                                   // ScaffoldMessenger.of(context)
                                   // ..removeCurrentSnackBar()
                                   // ..showSnackBar(SnackBar(content: Text('${selectedProduct.product.name} berhasil ditambahkan')));
-
-
                                 } 
                               ),
                             )
@@ -345,23 +351,70 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
     );
   }
 
-  Widget buildSaveButton(BuildContext context, Transaction transactionData) => ElevatedButton.icon(
+  List<Widget> buildTransactionDetailRows(BuildContext context ){
+    List<Widget> tmp = [];
+    
+    for(int i = 0; i < savedTransaction.transactionDetails.length; i++){
+      TransactionDetail e = savedTransaction.transactionDetails[i];
+
+      tmp.add(
+        Row(
+          children:[
+            Flexible(
+              child: ListTile(
+                title: Text(e.product.name!),
+                subtitle: Text(e.qty.toString()),
+              ),
+            ),
+            SizedBox(
+              width: 150,
+              child: Text(e.subtotal.toString()),
+            ),
+            ElevatedButton(
+              child: Icon(
+                Icons.delete,
+                color: Colors.black54,
+              ),
+              style: ElevatedButton.styleFrom(
+                primary: Colors.transparent,
+                shadowColor: Colors.transparent,
+              ),
+              onPressed: (){
+                setState(() {
+                  savedTransaction.transactionAmount = savedTransaction.transactionAmount - e.subtotal;
+                  savedTransaction.transactionDetails.removeAt(i);
+                });
+              },
+            ),
+          ]
+        )
+      );
+    }
+
+    return tmp; 
+  }
+
+  Widget buildSaveButton(BuildContext context, Transaction savedData) => ElevatedButton.icon(
     label: Text("Simpan"),
     icon: Icon(Icons.save),
     // style: ElevatedButton.styleFrom(
     //   minimumSize: Size(double.infinity, 50),
     // ),
-    onPressed: () {
+    onPressed: () async {
       final isValid = formKey.currentState!.validate();
 
       if(isValid){
         formKey.currentState!.save();
         setState(() => {isLoading = true}); 
-        debugPrint("old: ${transactionData.mechanicName.toString()}");
+
+        if(widget.title == 'Tambah Baru')
+          await addTransaction(savedData);
+          debugPrint("old: ${savedData.toString()}");
+        // else
+        //   await editProduct(key!, savedData);
 
         Future.delayed(Duration(milliseconds: 500), (){
-          setState(() => {isSaved = true}); 
-          // Navigator.pop(context, true);
+          Navigator.pop(context, true);
         });
 
       }
@@ -395,46 +448,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
     }
   );
 
-  List<Widget> buildTransactionDetailRows(BuildContext context){
-    List<Widget> tmp = [];
-    
-    for(int i = 0; i < savedTransaction.transactionDetails.length; i++){
-      TransactionDetail e = savedTransaction.transactionDetails[i];
+  Future addTransaction (Transaction transactionData) async {
+    final savedData = Transaction()
+      ..vehiclePlateNumber = transactionData.vehiclePlateNumber
+      ..vehicleOwnerName = transactionData.vehicleOwnerName
+      ..vehicleOwnerPhoneNumber = transactionData.vehicleOwnerPhoneNumber
+      ..transactionAmount = transactionData.transactionAmount
+      ..transactionDetails = transactionData.transactionDetails
+      ..transactionMechanics = [Employee(name: transactionData.mechanicName)]
+      ..createdAt = DateTime.now();
 
-      tmp.add(
-        Row(
-          children:[
-            Flexible(
-              child: ListTile(
-                title: Text(e.product.name!),
-                subtitle: Text(e.qty.toString()),
-              ),
-            ),
-            SizedBox(
-              width: 150,
-              child: Text(e.subtotal.toString()),
-            ),
-            ElevatedButton(
-              child: Icon(
-                Icons.delete,
-                color: Colors.black54,
-              ),
-              style: ElevatedButton.styleFrom(
-                primary: Colors.transparent,
-                shadowColor: Colors.transparent,
-              ),
-              onPressed: (){
-                setState(() {
-                  savedTransaction.transactionDetails.removeAt(i);
-                });
-              },
-            ),
-          ]
-        )
-      );
-    }
-
-    return tmp; 
+    final box = Hive.box<Transaction>('transactions');
+    box.add(savedData);
   }
+
+
 
 }

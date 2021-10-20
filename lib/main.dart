@@ -25,6 +25,7 @@ Future main() async {
   Hive.registerAdapter(ProductAdapter());
   Hive.registerAdapter(UserAdapter());
   Hive.registerAdapter(TransactionAdapter());
+  Hive.registerAdapter(TransactionDetailAdapter());
   await Hive.openBox<Employee>('employees');
   await Hive.openBox<Product>('products');
   await Hive.openBox<User>('users');

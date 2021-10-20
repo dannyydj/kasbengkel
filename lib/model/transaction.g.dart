@@ -22,13 +22,13 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       vehicleOwnerPhoneNumber: fields[5] as String,
       transactionDate: fields[6] as DateTime?,
       mechanicName: fields[7] as String,
-      totalTransaction: fields[8] as int,
+      transactionAmount: fields[8] as int,
     )
       ..rowid = fields[0] as int?
       ..id = fields[1] as int?
       ..transactionNumber = fields[2] as String?
-      ..transactionDetails = (fields[9] as List).cast<TransactionDetail>()
-      ..transactionMechanics = (fields[10] as List).cast<TransactionMechanic>()
+      ..transactionDetails = (fields[9] as List).cast<dynamic>()
+      ..transactionMechanics = (fields[10] as List).cast<dynamic>()
       ..createdAt = fields[11] as DateTime?
       ..updatedAt = fields[12] as DateTime?
       ..deletedAt = fields[13] as DateTime?
@@ -56,7 +56,7 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       ..writeByte(7)
       ..write(obj.mechanicName)
       ..writeByte(8)
-      ..write(obj.totalTransaction)
+      ..write(obj.transactionAmount)
       ..writeByte(9)
       ..write(obj.transactionDetails)
       ..writeByte(10)
@@ -78,6 +78,46 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is TransactionAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class TransactionDetailAdapter extends TypeAdapter<TransactionDetail> {
+  @override
+  final int typeId = 4;
+
+  @override
+  TransactionDetail read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return TransactionDetail(
+      product: fields[0] as Product?,
+      qty: fields[1] as int,
+      subtotal: fields[2] as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, TransactionDetail obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.product)
+      ..writeByte(1)
+      ..write(obj.qty)
+      ..writeByte(2)
+      ..write(obj.subtotal);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TransactionDetailAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
