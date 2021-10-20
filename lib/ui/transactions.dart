@@ -226,12 +226,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
                           labelText: 'Nomor Polisi',
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp("[a-zA-Z0-9]"))
+                          FilteringTextInputFormatter.allow(RegExp("[a-zA-Z0-9]")),
                         ],
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(context),
                         ]),
-                        onSaved: (value) => setState(() => savedTransaction.vehiclePlateNumber = value!),
+                        onSaved: (value) => setState(() => savedTransaction.vehiclePlateNumber = value!.toUpperCase()),
                       ),
                       const SizedBox(height: 10,),
                       FormBuilderTextField(
@@ -352,11 +352,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>{
     //   minimumSize: Size(double.infinity, 50),
     // ),
     onPressed: () {
-      setState(() => {isLoading = true}); 
       final isValid = formKey.currentState!.validate();
 
       if(isValid){
         formKey.currentState!.save();
+        setState(() => {isLoading = true}); 
         debugPrint("old: ${transactionData.mechanicName.toString()}");
 
         Future.delayed(Duration(milliseconds: 500), (){
